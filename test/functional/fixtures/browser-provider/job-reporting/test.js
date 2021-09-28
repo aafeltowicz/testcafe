@@ -12,6 +12,9 @@ if (config.useLocalBrowsers) {
 
         let mockProvider = null;
 
+        let openedBrowsersIncrements;
+        let browserClientsIncrements;
+
         const mockProviderPlugin = Object.assign({}, chromeBrowserProvider, {
             state:     {},
             idNameMap: {},
@@ -30,11 +33,15 @@ if (config.useLocalBrowsers) {
                     }, BROWSER_OPENING_DELAY);
                 }
 
-                return chromeBrowserProvider.openBrowser.call(this, browserId, pageUrl, {
+                const openedBrowser = chromeBrowserProvider.openBrowser.call(this, browserId, pageUrl, {
                     ...browserConfig,
                     userArgs: `--no-sandbox ${browserConfig.userArgs}`,
                     headless: true,
                 });
+
+                openedBrowsersIncrements.push(openedBrowser.openedBrowsers);
+                browserClientsIncrements.push(openedBrowser.browserClients);
+                return openedBrowser;
             },
 
             closeBrowser (browserId) {
@@ -79,6 +86,9 @@ if (config.useLocalBrowsers) {
         }
 
         before(function () {
+            openedBrowsersIncrements = [];
+            browserClientsIncrements = [];
+
             browserProviderPool.addProvider('chrome', mockProviderPlugin);
 
             return browserProviderPool
@@ -104,6 +114,8 @@ if (config.useLocalBrowsers) {
                     expect(mockProvider.plugin.state['id-1'].data).eql({ total: 2, passed: 1 });
                     expect(mockProvider.plugin.state['id-2'].result).eql(mockProvider.plugin.JOB_RESULT.done);
                     expect(mockProvider.plugin.state['id-2'].data).eql({ total: 2, passed: 1 });
+                    expect(openedBrowsersIncrements.length).to.be.eql(2);
+                    expect(openedBrowsersIncrements).to.be.eql(browserClientsIncrements);
                 });
         });
 
@@ -117,6 +129,8 @@ if (config.useLocalBrowsers) {
                     expect(mockProvider.plugin.state['failed-1'].result).eql(mockProvider.plugin.JOB_RESULT.errored);
                     expect(mockProvider.plugin.state['failed-1'].data.message).eql('Connection error');
                     expect(mockProvider.plugin.state['id-2'].result).eql(mockProvider.plugin.JOB_RESULT.aborted);
+                    expect(openedBrowsersIncrements.length).to.be.eql(2);
+                    expect(openedBrowsersIncrements).to.be.eql(browserClientsIncrements);
                 });
         });
 
@@ -126,6 +140,8 @@ if (config.useLocalBrowsers) {
                 .then(function () {
                     expect(mockProvider.plugin.state['id-1'].result).eql(mockProvider.plugin.JOB_RESULT.aborted);
                     expect(mockProvider.plugin.state['id-2'].result).eql(mockProvider.plugin.JOB_RESULT.aborted);
+                    expect(openedBrowsersIncrements.length).to.be.eql(2);
+                    expect(openedBrowsersIncrements).to.be.eql(browserClientsIncrements);
                 });
         });
     });

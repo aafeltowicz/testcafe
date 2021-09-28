@@ -17,7 +17,7 @@ export default {
     },
 
     _getBrowserProtocolClient (runtimeInfo) {
-        return runtimeInfo.browserClient;
+        return this.browserClients[runtimeInfo.browserId];
     },
 
     async _createRunTimeInfo (hostName, config, disableMultipleWindows) {
@@ -65,6 +65,7 @@ export default {
         const browserClient = new BrowserClient(runtimeInfo, proxyless);
 
         this.openedBrowsers[browserId] = runtimeInfo;
+        this.browserClients[browserId] = browserClient;
 
         await browserClient.init();
 
@@ -76,8 +77,8 @@ export default {
     async closeBrowser (browserId) {
         const runtimeInfo = this.openedBrowsers[browserId];
 
-        if (runtimeInfo.browserClient.isHeadlessTab())
-            await runtimeInfo.browserClient.closeTab();
+        if (this.browserClients[runtimeInfo.browserId].isHeadlessTab())
+            await this.browserClients[runtimeInfo.browserId].closeTab();
         else
             await this.closeLocalBrowser(browserId);
 
@@ -88,29 +89,31 @@ export default {
             await runtimeInfo.tempProfileDir.dispose();
 
         delete this.openedBrowsers[browserId];
+        delete this.browserClients[browserId];
     },
 
     async resizeWindow (browserId, width, height, currentWidth, currentHeight) {
         const runtimeInfo = this.openedBrowsers[browserId];
 
         if (runtimeInfo.config.mobile)
-            await runtimeInfo.browserClient.updateMobileViewportSize();
+            await this.browserClients[runtimeInfo.browserId].updateMobileViewportSize();
         else {
             runtimeInfo.viewportSize.width  = currentWidth;
             runtimeInfo.viewportSize.height = currentHeight;
         }
 
-        await runtimeInfo.browserClient.resizeWindow({ width, height });
+        await this.browserClients[runtimeInfo.browserId].resizeWindow({ width, height });
     },
 
     async getVideoFrameData (browserId) {
-        const { browserClient } = this.openedBrowsers[browserId];
+        const browserClient = this.browserClients[browserId];
 
         return browserClient.getScreenshotData();
     },
 
     async hasCustomActionForBrowser (browserId) {
-        const { config, browserClient } = this.openedBrowsers[browserId];
+        const { config }                = this.openedBrowsers[browserId];
+        const browserClient             = this.browserClients[browserId];
         const client                    = await browserClient.getActiveClient();
 
         return {

@@ -42,8 +42,6 @@ export class BrowserClient {
         this._proxyless   = proxyless;
 
         this._clientFunctionExecutor = new ClientFunctionExecutor();
-
-        runtimeInfo.browserClient = this;
     }
 
     private get _clientKey (): string {

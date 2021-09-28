@@ -5,6 +5,7 @@ import { readPng, writePng } from '../../../../utils/promisified-functions';
 
 export default {
     openedBrowsers: {},
+    browserClients: {},
 
     isMultiBrowser: false,
 
